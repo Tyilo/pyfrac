@@ -7,6 +7,7 @@ import argparse
 import readline
 import fractions
 import itertools
+import contextlib
 
 
 CONSTRUCTOR_VAR = '_F'
@@ -37,6 +38,16 @@ def factor_bases(n, *bases):
             q, r = divmod(n, b)
         yield exp
     yield n
+
+
+@contextlib.contextmanager
+def override_repr(type, repr):
+    old_repr = type.__repr__
+    type.__repr__ = repr
+    try:
+        yield
+    finally:
+        type.__repr__ = old_repr
 
 
 def fraction_repr(v):
@@ -82,7 +93,12 @@ def display_hook(v=None):
         # so we must output float(1.1) as float(1.1)
         print('float(%r)' % v)
     else:
-        print(repr(v))
+        # Override Fraction.__repr__ for the duration of repr(v),
+        # since v might be e.g. a list of fractions.
+        # Unfortunately we cannot override float.__repr__.
+        with override_repr(fractions.Fraction, fraction_repr):
+            r = repr(v)
+        print(r)
 
 
 sys.displayhook = display_hook
