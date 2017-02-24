@@ -42,6 +42,8 @@ def display_hook(v=None):
                 print(s)
             else:
                 print('%s \N{ALMOST EQUAL TO} %s' % (v, float(v)))
+    elif isinstance(v, float):
+        print('float(%r)' % v)
     else:
         print(repr(v))
 
