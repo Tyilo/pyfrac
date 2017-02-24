@@ -9,16 +9,7 @@ import itertools
 CONSTRUCTOR_VAR = '_F'
 
 
-class TransparentFraction(fractions.Fraction):
-    def __repr__(self):
-        return str(self)
-
-
-def parse(source, filename, symbol):
-    PyCF_DONT_IMPLY_DEDENT = 0x200          # Matches pythonrun.h
-    from ast import PyCF_ONLY_AST
-    flags = PyCF_DONT_IMPLY_DEDENT | PyCF_ONLY_AST
-    return compile(source, filename, symbol, flags)
+fractions.Fraction.__repr__ = fractions.Fraction.__str__
 
 
 def map_flat(st, f):
@@ -54,9 +45,14 @@ def make_patch_literals():
         return filter(None, map_flat(st, f))
 
     def patch_literals(source):
-        lines = source.splitlines(True)
         st = parser.suite(source).tolist(True, True)
         numbers = find_numbers(st)
+
+        def repl(node_type, literal):
+            assert node_type == number_id
+            return '(%s(%r))' % (CONSTRUCTOR_VAR, lit)
+
+        lines = source.splitlines(True)
         groups = itertools.groupby(numbers, key=lambda n: n[2])
         line_i = 0
         output_lines = []
@@ -68,17 +64,17 @@ def make_patch_literals():
             col_i = 0
             line = lines[line_j]
             output_line = []
-            for _n, lit, _lineno, col in group:
-                assert _n == number_id
+            for node_type, lit, _lineno, col in group:
                 assert _lineno == lineno
                 assert line[col:col+len(lit)] == lit
                 col_j = col
                 output_line.append(line[col_i:col_j])
                 col_i = col_j + len(lit)
 
-                output_line.append('(%s(%r))' % (CONSTRUCTOR_VAR, lit))
+                output_line.append(repl(node_type, lit))
             output_line.append(line[col_i:])
             output_lines.append(''.join(output_line))
+        output_lines += lines[line_i:]
         return ''.join(output_lines)
 
     return patch_literals
@@ -97,22 +93,22 @@ class CommandCompiler(codeop.CommandCompiler):
         return code
 
 
-class InteractiveConsole(code.InteractiveConsole):
+class FractionalInteractiveConsole(code.InteractiveConsole):
     def __init__(self, locals=None, filename='<console>'):
         if locals is None:
             locals = {}
         assert CONSTRUCTOR_VAR not in locals
-        locals[CONSTRUCTOR_VAR] = TransparentFraction
+        locals[CONSTRUCTOR_VAR] = fractions.Fraction
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
 
 
 def main():
     parser = argparse.ArgumentParser()
-    args = parser.parse_args()
+    parser.parse_args()
 
     local = banner = None
-    console = InteractiveConsole(local)
+    console = FractionalInteractiveConsole(local)
     console.interact(banner)
 
 
