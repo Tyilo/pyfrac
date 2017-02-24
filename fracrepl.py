@@ -3,6 +3,7 @@ import codeop
 import parser
 import argparse
 import fractions
+import itertools
 
 
 CONSTRUCTOR_VAR = '_F'
@@ -40,22 +41,40 @@ def get_atom_and_number_id():
 def make_patch_literals():
     atom_id, number_id = get_atom_and_number_id()
 
-    def find_atoms(st):
+    def find_numbers(st):
         def f(node, path):
-            if isinstance(node, list) and node[0] == atom_id:
+            if isinstance(node, list) and node[0] == number_id:
                 return node
 
         return filter(None, map_flat(st, f))
 
-    def patch_literals(st):
-        if isinstance(st, list) and st[0] == atom_id:
-            if isinstance(st[1], list) and st[1][0] == number_id:
-                replacement = parser.suite(
-                    '(%s(%r))' % (CONSTRUCTOR_VAR, st[1][1]))
-                st[:] = next(find_atoms(replacement.tolist()))
-        elif isinstance(st, list):
-            for c in st:
-                patch_literals(c)
+    def patch_literals(source):
+        lines = source.splitlines(True)
+        st = parser.suite(source).tolist(True, True)
+        numbers = find_numbers(st)
+        groups = itertools.groupby(numbers, key=lambda n: n[2])
+        line_i = 0
+        output_lines = []
+        for lineno, group in groups:
+            line_j = lineno - 1
+            output_lines += lines[line_i:line_j]
+            line_i = line_j + 1
+
+            col_i = 0
+            line = lines[line_j]
+            output_line = []
+            for _n, lit, _lineno, col in group:
+                assert _n == number_id
+                assert _lineno == lineno
+                assert line[col:col+len(lit)] == lit
+                col_j = col
+                output_line.append(line[col_i:col_j])
+                col_i = col_j + len(lit)
+
+                output_line.append('(%s(%r))' % (CONSTRUCTOR_VAR, lit))
+            output_line.append(line[col_i:])
+            output_lines.append(''.join(output_line))
+        return ''.join(output_lines)
 
     return patch_literals
 
@@ -68,9 +87,8 @@ class CommandCompiler(codeop.CommandCompiler):
         assert symbol == 'single'
         code = super().__call__(source, filename)
         if code is not None:
-            st = parser.suite(source).tolist()
-            patch_literals(st)
-            code = parser.sequence2st(st).compile(filename)
+            source = patch_literals(source)
+            code = super().__call__(source, filename)
         return code
 
 
@@ -82,16 +100,6 @@ class InteractiveConsole(code.InteractiveConsole):
         locals[CONSTRUCTOR_VAR] = fractions.Fraction
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
-
-    def runcode(self, code):
-        try:
-            res = exec(code, self.locals)
-        except SystemExit:
-            raise
-        except:
-            self.showtraceback()
-        else:
-            print(res)
 
 
 def main():
