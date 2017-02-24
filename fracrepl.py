@@ -81,7 +81,7 @@ def make_patch_literals():
 
         def repl(node_type, literal):
             assert node_type == number_id
-            return '(%s(%r))' % (CONSTRUCTOR_VAR, lit)
+            return '(%s(%r))' % (CONSTRUCTOR_VAR, literal)
 
         return replace_atoms(source, numbers, repl)
 
