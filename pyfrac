@@ -39,6 +39,32 @@ def factor_bases(n, *bases):
     yield n
 
 
+def fraction_repr(v):
+    p, q = v.numerator, v.denominator
+    if q == 1:
+        # v is integer
+        return str(p)
+    else:
+        # v = p/q (reduced) can be written as k / 10**e
+        # if and only if q can be written as 2**x * 5**y
+        x, y, rest = factor_bases(q, 2, 5)
+        assert q == rest * 2**x * 5**y
+        if rest == 1:
+            tens = max(x, y)
+            # If 2**x * 5**y divides q, then 10**max(x,y) divides q.
+            whole = v * 10 ** tens
+            # ... so v * 10**max(x,y) is integer:
+            assert whole.denominator == 1
+            # "Divide" by 10**max(x,y) using string operations:
+            s = str(whole.numerator).rjust(tens, '0')
+            s = (s[:-tens] or '0') + '.' + s[-tens:].rstrip('0')
+            # The resulting decimal expansion is equal to the input:
+            assert fractions.Fraction(s) == v
+            return s
+        else:
+            return str(v)
+
+
 def display_hook(v=None):
     '''
     Customize display of fractions and floats.
@@ -46,29 +72,11 @@ def display_hook(v=None):
     if v is None:
         pass
     if isinstance(v, fractions.Fraction):
-        p, q = v.numerator, v.denominator
-        if q == 1:
-            # v is integer
-            print(v.numerator)
+        s = fraction_repr(v)
+        if '/' in s:
+            print('%s \N{ALMOST EQUAL TO} %s' % (v, float(v)))
         else:
-            # v = p/q (reduced) can be written as k / 10**e
-            # if and only if q can be written as 2**x * 5**y
-            x, y, rest = factor_bases(q, 2, 5)
-            assert q == rest * 2**x * 5**y
-            if rest == 1:
-                tens = max(x, y)
-                # If 2**x * 5**y divides q, then 10**max(x,y) divides q.
-                whole = v * 10 ** tens
-                # ... so v * 10**max(x,y) is integer:
-                assert whole.denominator == 1
-                # "Divide" by 10**max(x,y) using string operations:
-                s = str(whole.numerator).rjust(tens, '0')
-                s = (s[:-tens] or '0') + '.' + s[-tens:].rstrip('0')
-                # The resulting decimal expansion is equal to the input:
-                assert fractions.Fraction(s) == v
-                print(s)
-            else:
-                print('%s \N{ALMOST EQUAL TO} %s' % (v, float(v)))
+            print(s)
     elif isinstance(v, float):
         # In our REPL, type(1.1) is Fraction,
         # so we must output float(1.1) as float(1.1)
