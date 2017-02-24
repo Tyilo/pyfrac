@@ -193,12 +193,37 @@ class CommandCompiler(codeop.CommandCompiler):
         return code
 
 
+def fractional_range(*args):
+    if all(v % 1 == 0 for v in args):
+        return range(*map(int, args))
+    elif all(isinstance(v, (int, fractions.Fraction)) for v in args):
+        if len(args) == 1:
+            start, (stop,), step = 0, args, 1
+        elif len(args) == 2:
+            (start, stop,), step = args, 1
+        elif len(args) == 3:
+            start, stop, step = args
+        else:
+            raise TypeError('incorrect number of arguments')
+
+        def gen():
+            v = start
+            while v < stop:
+                yield v
+                v += step
+
+        return gen()
+    else:
+        raise TypeError('incorrect argument types (not int/Fraction)')
+
+
 class FractionalInteractiveConsole(code.InteractiveConsole):
     def __init__(self, locals=None, filename='<console>'):
         if locals is None:
             locals = {}
         assert CONSTRUCTOR_VAR not in locals
         locals[CONSTRUCTOR_VAR] = fractions.Fraction
+        locals['range'] = fractional_range
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
 

@@ -43,6 +43,8 @@ False
 <class 'float'>
 >>> type(1.4142135623730951)
 <class 'fractions.Fraction'>
+>>> [1/i for i in range(1, 10)]
+[1, 0.5, 1/3, 0.25, 0.2, 1/6, 1/7, 0.125, 1/9]
 ```
 
 Compare the above to the default Python REPL:
