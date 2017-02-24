@@ -13,6 +13,21 @@ CONSTRUCTOR_VAR = '_F'
 
 
 def factor_bases(n, *bases):
+    '''
+    Factor n into powers of bases and a residue:
+
+    >>> n = 34132322487546384586981244928
+    >>> e2, e3, r = factor_bases(n, 2, 3)
+    >>> e2, e3, r
+    (22, 20, 2333892461657)
+    >>> n == 2**e2 * 3**e3 * r
+    True
+    >>> (r % 2, r % 3)
+    (1, 2)
+
+    Note, bases must be pairwise coprime.
+    '''
+
     for b in bases:
         exp = 0
         q, r = divmod(n, b)
@@ -25,25 +40,38 @@ def factor_bases(n, *bases):
 
 
 def display_hook(v=None):
+    '''
+    Customize display of fractions and floats.
+    '''
     if v is None:
         pass
     if isinstance(v, fractions.Fraction):
-        if v.denominator == 1:
+        p, q = v.numerator, v.denominator
+        if q == 1:
+            # v is integer
             print(v.numerator)
         else:
-            fives, twos, rest = factor_bases(v.denominator, 5, 2)
-            assert v.denominator == rest * 2**twos * 5**fives
+            # v = p/q (reduced) can be written as k / 10**e
+            # if and only if q can be written as 2**x * 5**y
+            x, y, rest = factor_bases(q, 2, 5)
+            assert q == rest * 2**x * 5**y
             if rest == 1:
-                tens = max(fives, twos)
+                tens = max(x, y)
+                # If 2**x * 5**y divides q, then 10**max(x,y) divides q.
                 whole = v * 10 ** tens
+                # ... so v * 10**max(x,y) is integer:
                 assert whole.denominator == 1
+                # "Divide" by 10**max(x,y) using string operations:
                 s = str(whole.numerator).rjust(tens, '0')
                 s = (s[:-tens] or '0') + '.' + s[-tens:].rstrip('0')
+                # The resulting decimal expansion is equal to the input:
                 assert fractions.Fraction(s) == v
                 print(s)
             else:
                 print('%s \N{ALMOST EQUAL TO} %s' % (v, float(v)))
     elif isinstance(v, float):
+        # In our REPL, type(1.1) is Fraction,
+        # so we must output float(1.1) as float(1.1)
         print('float(%r)' % v)
     else:
         print(repr(v))
