@@ -62,7 +62,7 @@ In `pyfrac`, the built-in `range` is overridden to return fractions:
 [0, 1/3, 2/3, 1, 4/3, 5/3, 2, 7/3, 8/3, 3, 10/3, 11/3]
 ```
 
-Functions that return floats are not modified, but their results are wrapped
+Functions that return floats are not modified, but their results are shown wrapped
 in `float(...)` in the REPL to show that they are not fractions:
 
 ```
