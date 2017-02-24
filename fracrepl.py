@@ -34,6 +34,37 @@ def get_atom_and_number_id():
     return atom_id, number_id
 
 
+def replace_atoms(source, atoms, repl):
+    '''
+    Replace given atoms in given Python source code using given function.
+    atoms: Iterable of 4-tuples (n, s, lineno, col) sorted on (lineno, col).
+    repl: Function accepting (n, s) and returning a replacement string.
+    '''
+
+    lines = source.splitlines(True)
+    groups = itertools.groupby(atoms, key=lambda n: n[2])
+    line_i = 0
+    output = []
+    for lineno, group in groups:
+        line_j = lineno - 1
+        output += lines[line_i:line_j]
+        line_i = line_j + 1
+
+        col_i = 0
+        line = lines[line_j]
+        for node_type, lit, _lineno, col in group:
+            assert _lineno == lineno
+            assert line[col:col+len(lit)] == lit
+            col_j = col
+            output.append(line[col_i:col_j])
+            col_i = col_j + len(lit)
+
+            output.append(repl(node_type, lit))
+        output.append(line[col_i:])
+    output += lines[line_i:]
+    return ''.join(output)
+
+
 def make_patch_literals():
     atom_id, number_id = get_atom_and_number_id()
 
@@ -52,30 +83,7 @@ def make_patch_literals():
             assert node_type == number_id
             return '(%s(%r))' % (CONSTRUCTOR_VAR, lit)
 
-        lines = source.splitlines(True)
-        groups = itertools.groupby(numbers, key=lambda n: n[2])
-        line_i = 0
-        output_lines = []
-        for lineno, group in groups:
-            line_j = lineno - 1
-            output_lines += lines[line_i:line_j]
-            line_i = line_j + 1
-
-            col_i = 0
-            line = lines[line_j]
-            output_line = []
-            for node_type, lit, _lineno, col in group:
-                assert _lineno == lineno
-                assert line[col:col+len(lit)] == lit
-                col_j = col
-                output_line.append(line[col_i:col_j])
-                col_i = col_j + len(lit)
-
-                output_line.append(repl(node_type, lit))
-            output_line.append(line[col_i:])
-            output_lines.append(''.join(output_line))
-        output_lines += lines[line_i:]
-        return ''.join(output_lines)
+        return replace_atoms(source, numbers, repl)
 
     return patch_literals
 
