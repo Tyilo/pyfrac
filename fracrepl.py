@@ -1,7 +1,9 @@
+import sys
 import code
 import codeop
 import parser
 import argparse
+import readline
 import fractions
 import itertools
 
@@ -9,7 +11,42 @@ import itertools
 CONSTRUCTOR_VAR = '_F'
 
 
-fractions.Fraction.__repr__ = fractions.Fraction.__str__
+def factor_bases(n, *bases):
+    for b in bases:
+        exp = 0
+        q, r = divmod(n, b)
+        while q > 0 and r == 0:
+            n = q
+            exp += 1
+            q, r = divmod(n, b)
+        yield exp
+    yield n
+
+
+def display_hook(v=None):
+    if v is None:
+        pass
+    if isinstance(v, fractions.Fraction):
+        if v.denominator == 1:
+            print(v.numerator)
+        else:
+            fives, twos, rest = factor_bases(v.denominator, 5, 2)
+            assert v.denominator == rest * 2**twos * 5**fives
+            if rest == 1:
+                tens = max(fives, twos)
+                whole = v * 10 ** tens
+                assert whole.denominator == 1
+                s = str(whole.numerator).rjust(tens, '0')
+                s = (s[:-tens] or '0') + '.' + s[-tens:].rstrip('0')
+                assert fractions.Fraction(s) == v
+                print(s)
+            else:
+                print('%s \N{ALMOST EQUAL TO} %s' % (v, float(v)))
+    else:
+        print(repr(v))
+
+
+sys.displayhook = display_hook
 
 
 def map_flat(st, f):
