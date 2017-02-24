@@ -9,6 +9,11 @@ import itertools
 CONSTRUCTOR_VAR = '_F'
 
 
+class TransparentFraction(fractions.Fraction):
+    def __repr__(self):
+        return str(self)
+
+
 def parse(source, filename, symbol):
     PyCF_DONT_IMPLY_DEDENT = 0x200          # Matches pythonrun.h
     from ast import PyCF_ONLY_AST
@@ -97,7 +102,7 @@ class InteractiveConsole(code.InteractiveConsole):
         if locals is None:
             locals = {}
         assert CONSTRUCTOR_VAR not in locals
-        locals[CONSTRUCTOR_VAR] = fractions.Fraction
+        locals[CONSTRUCTOR_VAR] = TransparentFraction
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
 
