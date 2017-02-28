@@ -78,6 +78,137 @@ def fraction_repr(v):
             return str(v)
 
 
+def int_floorlog(n: int, base: int, *, return_exp=False):
+    '''
+    >>> int_floorlog(1, 10)
+    0
+    >>> int_floorlog(9, 10)
+    0
+    >>> int_floorlog(10, 10)
+    1
+    >>> int_floorlog(99, 10)
+    1
+    >>> int_floorlog(100, 10)
+    2
+    >>> int_floorlog(10**100, 10)
+    100
+    >>> int_floorlog(10**100 + 12345, 10)
+    100
+    >>> int_floorlog(10**101 - 1, 10)
+    100
+    '''
+    if base <= 1:
+        raise ValueError('invalid log base')
+    if n <= 0:
+        raise ValueError('log of non-positive')
+    exps = []
+    exp_hi = base
+    while exp_hi <= n:
+        exps.append(exp_hi)
+        exp_hi **= 2
+    if not exps:
+        if return_exp:
+            return 0, 1
+        else:
+            return 0
+    exp_lo = exps.pop()
+    lo = 2 ** len(exps)
+    assert exp_lo == base ** lo
+    hi = lo * 2
+    while hi - lo > 1:
+        assert exp_lo == base ** lo
+        v = (hi - lo) // 2
+        exp_v = exps.pop()
+        assert exp_v == base ** v
+        mid = lo + v
+        exp_mid = exp_lo * exp_v
+        if exp_mid <= n:
+            lo = mid
+            exp_lo = exp_mid
+        else:
+            hi = mid
+    assert base ** lo <= n < base ** (lo + 1)
+    if return_exp:
+        return lo, exp_lo
+    else:
+        return lo
+
+
+def repeated(n: fractions.Fraction, base=10, min_exp=5):
+    def iter_digits(n: fractions.Fraction, base):
+        while True:
+            whole = n.numerator // n.denominator
+            yield whole, (n.numerator, n.denominator)
+            n = (n - whole) * base
+
+    exponent = fraction_floorlog(n, base)
+    if abs(exponent) < min_exp:
+        exponent = 0
+    n /= fractions.Fraction(base) ** exponent
+    s1 = iter_digits(n, base)
+    s2 = iter_digits(n, base)
+    digits = []
+    for (a, b), (c, d), (e, f) in zip(s1, s2, s2):
+        digits.append(c)
+        digits.append(e)
+        if b == f:
+            search = b
+            break
+    tail = []
+    for (a, b) in s2:
+        tail.append(a)
+        if b == search:
+            assert tail[-1] == digits[-1]
+            break
+    revtail = list(reversed(tail))
+    cut = next((i for i, d in enumerate(reversed(digits))
+                if d != revtail[i % len(tail)]), len(digits))
+    keep = max(1, len(digits) - cut)
+    tail = digits[keep:keep+len(tail)]
+    digits = digits[:keep]
+    if tail == [0]:
+        str_tail = ''
+    else:
+        str_tail = '(%s)' % ''.join(map(str, tail))
+    if exponent == 0:
+        str_exponent = ''
+    else:
+        str_exponent = 'e%+.0f' % exponent
+    return '%s.%s%s%s' % (digits[0], ''.join(map(str, digits[1:])),
+                          str_tail, str_exponent)
+
+
+def fraction_floorlog(f: fractions.Fraction, base):
+    '''
+    >>> from fractions import Fraction as F
+    >>> fraction_floorlog(F(4, 3)**100, 10)
+    12
+    >>> fraction_floorlog(F(3, 4)**100, 10)
+    -13
+    >>> float(F(3, 4)**100)  # doctest:+ELLIPSIS
+    3...e-13
+    '''
+    p, q = f.numerator, f.denominator
+    if p <= 0:
+        raise ValueError('log of non-positive')
+    res = None
+    if p < q:
+        n, r = divmod(q, p)
+        inv_res, exp_inv_res = int_floorlog(n, base, return_exp=True)
+        if r == 0 and exp_inv_res == n:
+            # base ** inv_res == q/p,
+            # so base ** -inv_res == p/q,
+            res = -inv_res
+        else:
+            # base ** inv_res < q/p < base ** (inv_res + 1),
+            # so base ** (-inv_res - 1) < p/q < base ** -inv_res
+            res = -inv_res - 1
+    else:
+        res = int_floorlog(p // q, base)
+    assert base ** res <= f < base ** (res + 1)
+    return res
+
+
 def display_hook(v=None):
     '''
     Customize display of fractions and floats.
@@ -90,7 +221,7 @@ def display_hook(v=None):
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
         if '/' in s:
-            disp = '%s \N{ALMOST EQUAL TO} %s' % (v, float(v))
+            disp = '%s = %s' % (v, repeated(v))
         else:
             disp = s
         value = v
