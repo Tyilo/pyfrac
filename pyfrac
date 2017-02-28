@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import code
 import math
@@ -230,6 +231,15 @@ class fractional_range:
     def __contains__(self, v):
         vd = self.d * v
         return vd % 1 == 0 and int(vd) in self.inner
+
+
+def set_window_title(s):
+    print('\033]0;%s\007' % s, flush=True, end='')
+
+
+def should_set_window_title():
+    term = os.environ.get('TERM', '')
+    return term.startswith('xterm') or term.startswith('vte')
 
 
 class FractionalInteractiveConsole(code.InteractiveConsole):
