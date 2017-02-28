@@ -251,6 +251,28 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
         locals.setdefault('range', fractional_range)
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
+        self.should_set_window_title = should_set_window_title()
+
+    def get_window_title(self):
+        try:
+            result = display_hook.most_recent
+        except AttributeError:
+            return 'pyfrac'
+
+        source = self.most_recent_source.replace('\n', ' ')
+        MAX_LEN = 40
+        if len(source) > MAX_LEN:
+            source = '%s\N{HORIZONTAL ELLIPSIS}' % source[:MAX_LEN-1]
+        return '%s = %s' % (source, result)
+
+    def raw_input(self, prompt=''):
+        if self.should_set_window_title:
+            set_window_title(self.get_window_title())
+        return input(prompt)
+
+    def runsource(self, source, filename="<input>", symbol="single"):
+        self.most_recent_source = source
+        return super().runsource(source, filename, symbol)
 
 
 def main():
