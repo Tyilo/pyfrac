@@ -260,9 +260,10 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
         self.should_set_window_title = should_set_window_title()
+        self.most_recent_source = ''
 
     def get_window_title(self):
-        if display_hook.most_recent is None:
+        if display_hook.most_recent is None or self.most_recent_source == '':
             return 'pyfrac'
 
         source = self.most_recent_source.replace('\n', ' ')
