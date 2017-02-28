@@ -52,7 +52,7 @@ def override_repr(type, repr):
         type.__repr__ = old_repr
 
 
-def fraction_repr(v):
+def fraction_repr(v, min_exp=5):
     p, q = v.numerator, v.denominator
     if q == 1:
         # v is integer
@@ -68,9 +68,18 @@ def fraction_repr(v):
             whole = v * 10 ** tens
             # ... so v * 10**max(x,y) is integer:
             assert whole.denominator == 1
-            # "Divide" by 10**max(x,y) using string operations:
-            s = str(whole.numerator).rjust(tens, '0')
-            s = (s[:-tens] or '0') + '.' + s[-tens:].rstrip('0')
+
+            sign = '-' if whole.numerator < 0 else ''
+            digits = str(abs(whole.numerator))
+            exponent = len(digits) - 1 - tens
+            if abs(exponent) >= min_exp:
+                dotted = (digits if len(digits) == 1 else
+                          '%s.%s' % (digits[0], digits[1:]))
+                s = '%s%se%+03.0f' % (sign, dotted, exponent)
+            else:
+                # "Divide" by 10**max(x,y) using string operations:
+                s = digits.rjust(tens, '0')
+                s = sign + (s[:-tens] or '0') + '.' + s[-tens:].rstrip('0')
             # The resulting decimal expansion is equal to the input:
             assert fractions.Fraction(s) == v
             return s
