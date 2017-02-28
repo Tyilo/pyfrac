@@ -58,6 +58,7 @@ def fraction_repr(v, min_exp=5):
         # v is integer
         return str(p)
     else:
+        # Can v be written with a finite decimal expansion?
         # v = p/q (reduced) can be written as k / 10**e
         # if and only if q can be written as 2**x * 5**y
         x, y, rest = factor_bases(q, 2, 5)
