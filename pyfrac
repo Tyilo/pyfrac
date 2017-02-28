@@ -85,7 +85,7 @@ def display_hook(v=None):
     if v is None:
         display_hook.most_recent = None
         return
-    if isinstance(v, int):
+    if isinstance(v, int) and not isinstance(v, bool):
         v = fractions.Fraction(v)
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
