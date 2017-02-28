@@ -86,20 +86,22 @@ def display_hook(v=None):
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
         if '/' in s:
-            print('%s \N{ALMOST EQUAL TO} %s' % (v, float(v)))
+            disp = '%s \N{ALMOST EQUAL TO} %s' % (v, float(v))
         else:
-            print(s)
+            disp = s
     elif isinstance(v, float):
         # In our REPL, type(1.1) is Fraction,
         # so we must output float(1.1) as float(1.1)
-        print('float(%r)' % v)
+        disp = 'float(%r)' % v
     else:
         # Override Fraction.__repr__ for the duration of repr(v),
         # since v might be e.g. a list of fractions.
         # Unfortunately we cannot override float.__repr__.
         with override_repr(fractions.Fraction, fraction_repr):
-            r = repr(v)
-        print(r)
+            disp = repr(v)
+
+    display_hook.most_recent = disp
+    print(disp)
 
 
 sys.displayhook = display_hook
