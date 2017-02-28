@@ -283,7 +283,9 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
     def raw_input(self, prompt=''):
         if self.should_set_window_title:
             set_window_title(self.get_window_title())
-        return input(prompt)
+        v = input(prompt)
+        display_hook.most_recent = None
+        return v
 
     def runsource(self, source, filename="<input>", symbol="single"):
         self.most_recent_source = source
