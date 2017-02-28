@@ -85,24 +85,30 @@ def display_hook(v=None):
     if v is None:
         display_hook.most_recent = None
         return
+    if isinstance(v, int):
+        v = fractions.Fraction(v)
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
         if '/' in s:
             disp = '%s \N{ALMOST EQUAL TO} %s' % (v, float(v))
         else:
             disp = s
+        value = v
     elif isinstance(v, float):
         # In our REPL, type(1.1) is Fraction,
         # so we must output float(1.1) as float(1.1)
         disp = 'float(%r)' % v
+        value = v
     else:
         # Override Fraction.__repr__ for the duration of repr(v),
         # since v might be e.g. a list of fractions.
         # Unfortunately we cannot override float.__repr__.
         with override_repr(fractions.Fraction, fraction_repr):
             disp = repr(v)
+        value = None
 
     display_hook.most_recent = disp
+    display_hook.most_recent_value = value
     print(disp)
 
 
@@ -260,10 +266,18 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
             return 'pyfrac'
 
         source = self.most_recent_source.replace('\n', ' ')
+        eq = '='
+        result = display_hook.most_recent.replace('\n', ' ')
         MAX_LEN = 40
         if len(source) > MAX_LEN:
             source = '%s\N{HORIZONTAL ELLIPSIS}' % source[:MAX_LEN-1]
-        return '%s = %s' % (source, result)
+        if len(result) > MAX_LEN:
+            if display_hook.most_recent_value is not None:
+                eq = '\N{ALMOST EQUAL TO}'
+                result = '%g' % display_hook.most_recent_value
+            else:
+                result = '%s\N{HORIZONTAL ELLIPSIS}' % result[:MAX_LEN-1]
+        return '%s %s %s' % (source, eq, result)
 
     def raw_input(self, prompt=''):
         if self.should_set_window_title:
