@@ -83,7 +83,7 @@ def display_hook(v=None):
     Customize display of fractions and floats.
     '''
     if v is None:
-        pass
+        return
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
         if '/' in s:
