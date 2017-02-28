@@ -236,7 +236,7 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
             locals = {}
         assert CONSTRUCTOR_VAR not in locals
         locals[CONSTRUCTOR_VAR] = fractions.Fraction
-        locals['range'] = fractional_range
+        locals.setdefault('range', fractional_range)
         super().__init__(locals, filename)
         self.compile = CommandCompiler()
 
