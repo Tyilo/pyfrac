@@ -243,11 +243,16 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.parse_args()
+    parser.add_argument('-q', action='store_true',
+                        help="don't print version and copyright messages")
+    args = parser.parse_args()
 
-    local = banner = None
-    console = FractionalInteractiveConsole(local)
-    console.interact(banner)
+    if args.q or sys.flags.quiet:
+        banner, exitmsg = '', ''
+    else:
+        banner, exitmsg = None, None
+    console = FractionalInteractiveConsole()
+    console.interact(banner, exitmsg)
 
 
 if __name__ == "__main__":
