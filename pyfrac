@@ -83,6 +83,7 @@ def display_hook(v=None):
     Customize display of fractions and floats.
     '''
     if v is None:
+        display_hook.most_recent = None
         return
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
@@ -105,6 +106,7 @@ def display_hook(v=None):
     print(disp)
 
 
+display_hook.most_recent = None
 sys.displayhook = display_hook
 
 
@@ -254,9 +256,7 @@ class FractionalInteractiveConsole(code.InteractiveConsole):
         self.should_set_window_title = should_set_window_title()
 
     def get_window_title(self):
-        try:
-            result = display_hook.most_recent
-        except AttributeError:
+        if display_hook.most_recent is None:
             return 'pyfrac'
 
         source = self.most_recent_source.replace('\n', ' ')
