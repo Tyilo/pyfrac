@@ -151,6 +151,10 @@ def repeated(n: fractions.Fraction, base=10, min_exp=5, limit=75):
             yield whole, (n.numerator, n.denominator)
             n = (n - whole) * base
 
+    if n < 0:
+        r = repeated(-n, base, min_exp)
+        return '-%s' % r if r else r
+
     exponent = fraction_floorlog(n, base)
     if abs(exponent) < min_exp:
         exponent = 0
