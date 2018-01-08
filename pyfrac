@@ -152,7 +152,7 @@ def repeated(n: fractions.Fraction, base=10, min_exp=5, limit=75):
             n = (n - whole) * base
 
     if n < 0:
-        r = repeated(-n, base, min_exp)
+        r = repeated(-n, base, min_exp, limit)
         return '-%s' % r if r else r
 
     exponent = fraction_floorlog(n, base)
