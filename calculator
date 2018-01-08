@@ -1,4 +1,4 @@
 #!/bin/bash
 set -euo pipefail
 ME=`readlink -e "$BASH_SOURCE"`
-DESKTOP_STARTUP_ID="${DESKTOP_STARTUP_ID:-calculator}" exec gnome-terminal -e "${ME%/*}/pyfrac -q"
+DESKTOP_STARTUP_ID="${DESKTOP_STARTUP_ID:-calculator}" exec gnome-terminal -- "${ME%/*}/pyfrac" -q
