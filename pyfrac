@@ -144,7 +144,7 @@ def int_floorlog(n: int, base: int, *, return_exp=False):
         return lo
 
 
-def repeated(n: fractions.Fraction, base=10, min_exp=5):
+def repeated(n: fractions.Fraction, base=10, min_exp=5, limit=75):
     def iter_digits(n: fractions.Fraction, base):
         while True:
             whole = n.numerator // n.denominator
@@ -158,7 +158,9 @@ def repeated(n: fractions.Fraction, base=10, min_exp=5):
     s1 = iter_digits(n, base)
     s2 = iter_digits(n, base)
     digits = []
-    for (a, b), (c, d), (e, f) in zip(s1, s2, s2):
+    for i, ((a, b), (c, d), (e, f)) in enumerate(zip(s1, s2, s2)):
+        if i > limit:
+            return None
         digits.append(c)
         digits.append(e)
         if b == f:
@@ -231,7 +233,11 @@ def display_hook(v=None):
     if isinstance(v, fractions.Fraction):
         s = fraction_repr(v)
         if '/' in s:
-            disp = '%s = %s' % (v, repeated(v))
+            r = repeated(v)
+            if not r:
+                disp = '%s ≈ %s' % (v, float(v))
+            else:
+                disp = '%s = %s' % (v, r)
         else:
             disp = s
         value = v
